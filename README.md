@@ -1,13 +1,13 @@
-# QR Code Generator
+# GS1 DataMatrix Label Generator
 
-A simple and efficient Go application that generates a physical-space-optimized QR code from plain text.
+A specialized Go application that generates industry-standard GS1 DataMatrix barcodes.
 
 ## Features
-- Reads input from a `texto.txt` file.
-- Generates a QR code (`qrcode.png`) using `github.com/skip2/go-qrcode`.
-- Uses `qrcode.Low` error correction to minimize visual density, making the code easily scannable at very small physical sizes.
-- Removes the quiet zone (white border) to maximize the use of available physical space.
-- Configured to output "pixel-perfect" blocks (e.g., 5x5 pixels per module) to prevent blurring when the image is scaled down for printing.
+- Reads structured GS1 data (GTIN, Serial Number, and Expiration Date) from a `texto.txt` file.
+- Automatically pads GTINs to 14 digits as required by GS1 specifications.
+- Strategically orders Application Identifiers (AIs) to avoid needing Group Separator (`<GS>`) characters.
+- Injects the mandatory `FNC1` character at the beginning of the barcode to ensure it is recognized by hardware scanners as a valid GS1 DataMatrix.
+- Outputs a crisp, scalable `datamatrix.png` image.
 
 ## Requirements
 - [Go](https://go.dev/) installed on your machine.
@@ -16,28 +16,26 @@ A simple and efficient Go application that generates a physical-space-optimized 
 
 ### Option 1: Run directly
 1. Ensure you are in the project directory.
-2. Create or edit the `texto.txt` file in the root directory and add the content you want to encode. Keep it as short as possible for smaller QR codes.
+2. Edit the `texto.txt` file in the root directory. You **must** provide exactly three lines of data in this order:
+   - **Line 1:** GTIN (Product Code) - *Will be auto-padded to 14 digits if shorter.*
+   - **Line 2:** Serial Number (AI 21)
+   - **Line 3:** Expiration Date (AI 17) - *Must be exactly 6 digits in YYMMDD format.*
 3. Run the application:
    ```bash
    go run main.go
    ```
-4. The generated QR code will be saved as `qrcode.png` in the same directory.
+4. The generated GS1 DataMatrix will be saved as `datamatrix.png` in the same directory.
 
 ### Option 2: Build and run the binary
 If you prefer to compile the application into a standalone executable:
 1. Build the binary:
    ```bash
-   go build -o qr-generator
+   go build -o gs1-label-gen
    ```
 2. Run the compiled binary:
-   - **Linux / macOS:** `./qr-generator`
-   - **Windows:** `qr-generator.exe`
+   - **Linux / macOS:** `./gs1-label-gen`
+   - **Windows:** `gs1-label-gen.exe`
 
-## Customizing the QR Size
-
-To change the pixel density of the generated QR code, modify the following line in `main.go`:
-```go
-err = qr.WriteFile(-5, qrFileName)
-```
-- `-5`: Means each module (QR block) will be exactly 5x5 pixels.
-- Use smaller negative numbers like `-1` or `-2` for a tiny image file output, or positive numbers (like `256`) to set a fixed total width/height in pixels.
+## Technical Details (AIs)
+The application automatically encodes the data using the following structure:
+`[FNC1] (01) GTIN (17) YYMMDD (21) SERIAL`
